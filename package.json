@@ -1,0 +1,16 @@
+{
+  "name": "mono-runstats",
+  "module": "index.ts",
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/bot",
+    "apps/webstrava"
+  ],
+  "scripts": {
+    "bot:run": "bun run apps/bot/index.ts"
+  }
+}
