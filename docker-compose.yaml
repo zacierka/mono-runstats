@@ -1,0 +1,44 @@
+version: "3.9"
+
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: apps/bot/Dockerfile
+    container_name: strava-bot
+    ports:
+      - "4000:4000"
+    env_file:
+      - apps/bot/.env
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  webstrava:
+    build:
+      context: ./apps/webstrava
+      dockerfile: Dockerfile
+    container_name: webstrava
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16
+    container_name: strava-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: strava
+      POSTGRES_PASSWORD: strava
+      POSTGRES_DB: strava_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

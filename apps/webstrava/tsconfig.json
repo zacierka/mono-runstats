@@ -5,7 +5,7 @@
     ],
     "module": "esnext",
     "target": "esnext",
-    "moduleResolution": "nodenext",
+    "moduleResolution": "bundler",
     "strict": true,
     "downlevelIteration": true,
     "skipLibCheck": true,
@@ -14,7 +14,7 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
     "types": [
-      "bun-types" // add Bun global
+      "@types/bun" // add Bun global
     ]
   }
 }
