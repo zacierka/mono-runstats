@@ -1,0 +1,24 @@
+FROM oven/bun:1-slim
+
+WORKDIR /app
+
+# Copy only package files first
+COPY package.json bun.lock ./
+COPY packages/shared/package.json ./packages/shared/
+COPY apps/bot/package.json ./apps/bot/
+
+# Install dependencies
+RUN bun install --filter '@apps/bot'
+
+# Copy source files
+COPY apps/bot ./apps/bot
+COPY packages/shared ./packages/shared
+
+# Build shared package
+RUN cd packages/shared && bun run build
+
+# Expose nothing (Discord bot doesn't need ports)
+EXPOSE 4000
+
+# Run bot
+CMD ["bun", "run", "apps/bot/src/index.ts"]

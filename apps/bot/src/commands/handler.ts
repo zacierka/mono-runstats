@@ -5,10 +5,15 @@ import path from "node:path";
 
 // this doesnt load any commands. Need to copy the deploy-commands logic to here (uses glob)
 export async function loadCommands(client: Client) {
+  const environment = process.env.NODE_ENV || "development";
   client.commands = new Collection<string, Command>();  
   const glob = new Bun.Glob("**/*.ts");
-  const commandsPath = path.join(process.cwd(), "src/commands");
-
+  var commandsPath = "";
+  if (environment === "production") {
+    commandsPath = path.join(process.cwd(), "apps/bot/src/commands");
+  } else if (environment === "development") {
+    commandsPath = path.join(process.cwd(), "src/commands");
+  }
   for await (const file of glob.scan(commandsPath)) {
     if (!file.endsWith(".ts") || file === "handler.ts" || file === "command.ts") continue;
 

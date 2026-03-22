@@ -1,0 +1,9 @@
+{
+  "name": "@packages/shared",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir ./dist --target node"
+  }
+}

@@ -1,20 +1,14 @@
 {
   "compilerOptions": {
-    "lib": [
-      "ESNext"
-    ],
-    "module": "esnext",
-    "target": "esnext",
-    "moduleResolution": "bundler",
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
     "strict": true,
-    "downlevelIteration": true,
-    "skipLibCheck": true,
-    "jsx": "preserve",
-    "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
-    "allowJs": true,
-    "types": [
-      "@types/bun" // add Bun global
-    ]
+    "paths": {
+      "@packages/shared": [
+        "../../packages/shared/src"
+      ]
+    }
   }
 }
