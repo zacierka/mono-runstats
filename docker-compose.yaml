@@ -7,20 +7,20 @@ services:
     ports:
       - "4000:4000"
     env_file:
-      - apps/bot/.env.bot
+      - apps/bot/.env
     depends_on:
       - postgres
-    restart: unless-stopped
+    restart: on-failure:3
 
   webstrava:
     build:
       context: .
-      dockerfile: infra/images/Dockerfile.web
+      dockerfile: infra/images/Dockerfile.webstrava
     container_name: webstrava
     ports:
       - "3000:3000"
     env_file:
-      - apps/webstrava/.env.webstrava
+      - apps/webstrava/.env
     depends_on:
       - postgres
     restart: unless-stopped

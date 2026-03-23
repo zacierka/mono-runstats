@@ -1,6 +1,6 @@
 {
   "name": "@apps/bot",
-  "version": "1.0.12",
+  "version": "1.0.14",
   "type": "module",
   "dependencies": {
     "discord.js": "^14.11.0",
@@ -12,7 +12,6 @@
     "dotenv": "^17.2.4"
   },
   "scripts": {
-    "bot:run": "bun run --watch src/index.ts",
-    "bot:build": "bun pm version patch && docker build -t runstatsbot:latest ."
+    "run": "bun run src/index.ts"
   }
 }

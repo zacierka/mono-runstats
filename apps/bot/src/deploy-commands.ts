@@ -1,15 +1,15 @@
 import "dotenv/config";
 import { REST, Routes, Snowflake } from "discord.js";
 import path from "node:path";
-import { log } from "node:console";
+
 async function deploy() {
   const commands: any[] = [];
 
   const glob = new Bun.Glob("**/*.ts");
-  const commandsPath = path.join(process.cwd(), "src/commands");
+  const commandsPath = path.join(import.meta.dir, "commands");
 
   for await (const file of glob.scan(commandsPath)) {
-    log(`Processing command file: ${file}`);
+    console.log(`Processing command file: ${file}`);
     if (file.endsWith("index.ts") || file.endsWith("handler.ts") || file.endsWith("command.ts")) continue;
 
     const fullPath = path.join(commandsPath, file);

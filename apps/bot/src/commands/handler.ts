@@ -8,16 +8,12 @@ export async function loadCommands(client: Client) {
   const environment = process.env.NODE_ENV || "development";
   client.commands = new Collection<string, Command>();  
   const glob = new Bun.Glob("**/*.ts");
-  var commandsPath = "";
-  if (environment === "production") {
-    commandsPath = path.join(process.cwd(), "apps/bot/src/commands");
-  } else if (environment === "development") {
-    commandsPath = path.join(process.cwd(), "src/commands");
-  }
-  for await (const file of glob.scan(commandsPath)) {
+  console.log(import.meta.dir);
+  
+  for await (const file of glob.scan(import.meta.dir)) {
     if (!file.endsWith(".ts") || file === "handler.ts" || file === "command.ts") continue;
 
-    const filePath = path.join(commandsPath, file);
+    const filePath = path.join(import.meta.dir, file);
     const commandModule = await import(filePath);
     const command: Command = commandModule.default;
 
