@@ -1,8 +1,8 @@
-import { Hono } from "hono"
-import { stravaRoutes } from "./routes/strava"
+import { Hono } from "hono";
+import { stravaRoutes } from "./routes/strava";
 
-const app = new Hono()
+const app = new Hono();
 
-app.route("/", stravaRoutes)
+app.route("/", stravaRoutes);
 
-export default app
+export default app;

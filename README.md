@@ -7,3 +7,7 @@ This repo is all the applications needed to start runstats. RunStats is a discor
 
 ## Hosted
 This app will support portainer stack and docker compose. Eventually helm ... maybe.
+
+docker-compose up -d
+
+docker-compose down --rmi local
