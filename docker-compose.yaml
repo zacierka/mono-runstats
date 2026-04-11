@@ -23,20 +23,34 @@ services:
       - apps/webstrava/.env
     depends_on:
       - postgres
-    restart: unless-stopped
+    restart: no
 
   postgres:
     image: postgres:16
     container_name: strava-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: strava
-      POSTGRES_PASSWORD: strava
-      POSTGRES_DB: strava_db
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PWD}
+      POSTGRES_DB: ${DATABASE_DB}
     ports:
       - "5432:5432"
     volumes:
+      - ./infra/sql/master.sql:/docker-entrypoint-initdb.d/init.sql
       - postgres_data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PWD}
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
 
 volumes:
   postgres_data:
+  pgadmin_data:

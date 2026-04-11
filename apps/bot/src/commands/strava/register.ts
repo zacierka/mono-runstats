@@ -16,7 +16,7 @@ const command: Command = {
 
     const button = new ButtonBuilder()
       .setLabel("Link Strava Account")
-      .setStyle(ButtonStyle.Link) // Link style
+      .setStyle(ButtonStyle.Link)
       .setURL(authUrl);
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button);
