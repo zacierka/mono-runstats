@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { db } from "@packages/shared/src/database/db";
 
 export const stravaRoutes = new Hono();
 
@@ -54,6 +55,7 @@ stravaRoutes.get("/auth/strava/callback", async (c) => {
 
     const discordUserId = state;
 
+    
     // Save to database
     console.log("Linked user:", discordUserId, data.athlete.id);
 
