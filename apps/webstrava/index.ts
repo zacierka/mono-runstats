@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { stravaRoutes } from "./routes/strava";
+import { stravaRoutes } from "./src/routes/strava";
 
 const app = new Hono();
 

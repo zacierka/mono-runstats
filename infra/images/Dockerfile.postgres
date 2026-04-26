@@ -1,0 +1,2 @@
+FROM postgres:18.3
+COPY infra/sql/master.sql /docker-entrypoint-initdb.d/init.sql

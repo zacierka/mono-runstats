@@ -26,7 +26,9 @@ services:
     restart: no
 
   postgres:
-    image: postgres:16
+    build:
+      context: .
+      dockerfile: infra/images/Dockerfile.postgres
     container_name: strava-postgres
     restart: unless-stopped
     environment:
@@ -36,8 +38,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./infra/sql/master.sql:/docker-entrypoint-initdb.d/init.sql
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
 
   pgadmin:
     image: dpage/pgadmin4
@@ -50,7 +51,6 @@ services:
       - postgres
     volumes:
       - pgadmin_data:/var/lib/pgadmin
-
 volumes:
   postgres_data:
   pgadmin_data:

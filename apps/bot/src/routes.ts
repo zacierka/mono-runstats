@@ -1,7 +1,7 @@
-import { Hono } from "hono";
-import { sendMessage, sendEmbed, botHealth } from "./discord";
-import { StravaFormatter, StravaRunActivity } from "./formatter/StravaFormatter";
-
+import { Hono, } from "hono";
+import { sendMessage, sendEmbed, botHealth, formatActivity } from "./discord";
+import { sql } from "bun";
+import { backendService } from "@packages/shared/src/hono/middleware";
 const routes = new Hono();
 
 // ─── Health check
@@ -10,25 +10,60 @@ routes.get("/health", (c) => {
 });
 
 // ─── Strava activity msg
-routes.post("/strava/activity", async (c) => {
-  const body = await c.req.json().catch(() => ({}));
-
-  // perform basic validation of the payload
-  if (!body || !body.name || !body.distance || !body.moving_time) {
-    return c.json({ error: "Invalid payload. Expected StravaRunActivity format." }, 400);
+routes.post("/strava/activity", backendService, async (c) => {
+  const { activity_id } = await c.req.json();
+  if (!activity_id) {
+    return c.json({ error: "Invalid payload" }, 400);
   }
 
-  const activity = body as StravaRunActivity;
+  const [activity] = await sql`
+  SELECT
+    sa.strava_activity_id,
+    sa.name,
+    sa.sport_type,
+    sa.distance_meters,
+    sa.moving_time_seconds,
+    sa.elevation_gain,
+    sa.start_date,
+    u.discord_id,
 
-  // idea: generate PNG from segment data
+    -- Weekly stats scoped to this user
+    COUNT(*) FILTER (
+      WHERE sa2.sport_type = 'Run'
+        AND sa2.start_date >= date_trunc('week', now())
+    )::int AS weekly_run_count,
 
-  await sendEmbed(StravaFormatter.stravaRun(activity));
+    ROUND((
+      SUM(sa2.distance_meters) FILTER (
+        WHERE sa2.sport_type = 'Run'
+          AND sa2.start_date >= date_trunc('week', now())
+      ) / 1609.344
+    )::numeric, 2) AS weekly_miles
 
-  return c.json({ ok: true, message: `Sent Discord message for activity ${activity.name}` });
+  FROM strava_activities sa
+  JOIN strava_accounts acc ON acc.id = sa.strava_account_id
+  JOIN users u             ON u.id   = acc.user_id
+
+  -- Self-join to aggregate all activities for this user
+  JOIN strava_activities sa2 ON sa2.strava_account_id = acc.id
+
+  WHERE sa.strava_activity_id = ${activity_id}
+  GROUP BY sa.strava_activity_id, sa.name, sa.sport_type,
+           sa.distance_meters, sa.moving_time_seconds,
+           sa.elevation_gain, sa.start_date, u.discord_id
+`;
+
+  if (!activity) {
+    return c.text("Activity not found", 404);
+  }
+
+  await sendEmbed(formatActivity(activity, activity.discord_id));
+
+  return c.text("ok");
 });
 
 // ─── Raw text message
-routes.post("/message", async (c) => {
+routes.post("/message", backendService, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const text = body?.text ?? "Empty message.";
 
