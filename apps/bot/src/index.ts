@@ -17,9 +17,7 @@ app.all("*", (c) => {
 await waitForReady();
 console.log(`[Server] Hono listening on http://localhost:${port}`);
 
-export default app;
-
-Bun.serve({
+export default {
   port,
   fetch: app.fetch,
-});
+};

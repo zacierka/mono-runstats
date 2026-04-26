@@ -6,7 +6,7 @@ export const stravaRoutes = new Hono();
 const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID!;
 const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET!;
 const STRAVA_VERIFY_TOKEN = process.env.STRAVA_VERIFY_TOKEN!;
-
+const STRAVA_BOT_ENDPOINT = process.env.STRAVA_BOT_ENDPOINT!;
 /**
  * OAuth Redirect
  * 
@@ -174,6 +174,14 @@ stravaRoutes.post("/webhook", async (c) => {
     console.log("Saved activity:", activity.id, activity.name, "for athlete:", athleteId);
 
     // fetch POST to discord bot
+    await fetch(`http://${STRAVA_BOT_ENDPOINT}/strava/activity`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "x-internal-secret": process.env.INTERNAL_SECRET
+        },
+        body: JSON.stringify({ activity_id: activity.id })
+    });
 
     return c.text("ok");
 });
