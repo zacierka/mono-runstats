@@ -4,7 +4,7 @@ import { sql } from "bun";
 
 const command: Command = {
     data: new SlashCommandBuilder()
-        .setName("unlink")
+        .setName("unlink-strava")
         .setDescription("Remove your Strava account"),
 
     async execute(interaction) {

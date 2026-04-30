@@ -13,7 +13,7 @@ import {
 
 const command: Command = {
   data: new SlashCommandBuilder()
-    .setName("join")
+    .setName("link-strava")
     .setDescription("Link your Strava account"),
 
   async execute(interaction) {

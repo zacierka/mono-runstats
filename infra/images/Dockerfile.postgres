@@ -1,2 +1,3 @@
 FROM postgres:18.3
-COPY infra/sql/master.sql /docker-entrypoint-initdb.d/init.sql
+COPY infra/sql/01_master.sql /docker-entrypoint-initdb.d/01_init.sql
+# COPY infra/sql/02_mock_data.sql /docker-entrypoint-initdb.d/02_mock.sql
