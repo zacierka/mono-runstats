@@ -99,11 +99,13 @@ stravaRoutes.get("/webhook", (c) => {
     const challenge = c.req.query("hub.challenge");
 
     if (mode === "subscribe" && token === STRAVA_VERIFY_TOKEN) {
+        console.log(`Received Create Request from Strava: Success`);
         return c.json({
             "hub.challenge": challenge
         })
     }
-
+    console.log(`Received Create Request from Strava: Failed`);
+    
     return c.text("Verification failed", 403);
 })
 

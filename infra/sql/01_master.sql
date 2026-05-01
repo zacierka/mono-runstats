@@ -4,8 +4,8 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- Core user identity, keyed on Discord
 CREATE TABLE users (
   id                       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  discord_id               TEXT NOT NULL UNIQUE,
-  discord_username         TEXT NOT NULL,
+  discord_id               TEXT UNIQUE,
+  discord_username         TEXT,
   discord_avatar           TEXT,
   discord_email            TEXT,
   -- Web app: store Discord OAuth tokens for website login
