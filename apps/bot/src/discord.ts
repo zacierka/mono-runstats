@@ -1,8 +1,9 @@
-import { Client, Collection, Events, GatewayIntentBits, TextChannel } from "discord.js";
+import { ActivityType, Client, Collection, Events, GatewayIntentBits, PresenceData, TextChannel } from "discord.js";
 import { loadCommands } from "./commands/handler";
-
+import { sql } from "bun";
 const token = process.env.DISCORD_TOKEN;
 const channelId = process.env.DISCORD_STRAVA_CHANNEL_ID as string;
+let statusInterval: NodeJS.Timeout;
 
 if (!token || !channelId) {
   throw new Error(
@@ -21,6 +22,7 @@ const readyPromise = new Promise<void>((resolve) => {
 
 client.once(Events.ClientReady, (c) => {
   console.log(`[Discord] Logged in as ${c.user.tag}`);
+  startStatusRotation();
   resolveReady();
 });
 
@@ -30,15 +32,15 @@ client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   console.log(`Command Called: ${interaction.commandName} by ${interaction.user.tag}`);
-  
+
 
   const command = client.commands.get(interaction.commandName);
   console.log(`Command resolved to ${command.data.name}`);
-  
+
   if (!command) return;
 
   await command.execute(interaction);
-  
+
 });
 
 client.login(token);
@@ -58,7 +60,7 @@ export async function sendMessage(content: string): Promise<void> {
   if (!channel || !channel.isSendable()) {
     throw new Error(
       `Channel ${channelId} not found or is not a sendable text channel. ` +
-        `Make sure the bot has permission to send messages there.`
+      `Make sure the bot has permission to send messages there.`
     );
   }
 
@@ -96,38 +98,88 @@ export async function sendEmbed(embed: {
 }
 
 export function formatActivity(activity: any, discordId: string): Parameters<typeof sendEmbed>[0] {
-    const distanceMiles = (activity.distance_meters / 1609.344).toFixed(2);
-    const pacePerMile = activity.moving_time_seconds / (activity.distance_meters / 1609.344);
-    const paceMinutes = Math.floor(pacePerMile / 60); 
-    const paceSeconds = Math.round(pacePerMile % 60).toString().padStart(2, "0");
-    const durationHours = Math.floor(activity.moving_time_seconds / 3600);
-    const durationMinutes = Math.floor((activity.moving_time_seconds % 3600) / 60);
-    const durationSeconds = (activity.moving_time_seconds % 60).toString().padStart(2, "0");
-    const elevationFeet = Math.round(activity.elevation_gain * 3.28084);
-    const weekly_miles = activity.weekly_miles;
-    const weekly_run_count = activity.weekly_run_count;
-    const duration = durationHours > 0
-        ? `${durationHours}h ${durationMinutes}m ${durationSeconds}s`
-        : `${durationMinutes}m ${durationSeconds}s`;
+  const distanceMiles = (activity.distance_meters / 1609.344).toFixed(2);
+  const pacePerMile = activity.moving_time_seconds / (activity.distance_meters / 1609.344);
+  const paceMinutes = Math.floor(pacePerMile / 60);
+  const paceSeconds = Math.round(pacePerMile % 60).toString().padStart(2, "0");
+  const durationHours = Math.floor(activity.moving_time_seconds / 3600);
+  const durationMinutes = Math.floor((activity.moving_time_seconds % 3600) / 60);
+  const durationSeconds = (activity.moving_time_seconds % 60).toString().padStart(2, "0");
+  const elevationFeet = Math.round(activity.elevation_gain * 3.28084);
+  const weekly_miles = activity.weekly_miles;
+  const weekly_run_count = activity.weekly_run_count;
+  const duration = durationHours > 0
+    ? `${durationHours}h ${durationMinutes}m ${durationSeconds}s`
+    : `${durationMinutes}m ${durationSeconds}s`;
 
-    return {
-        title: `${activity.name}`,
-        description: `<@${discordId}> just logged a ${activity.sport_type.toLowerCase()}!`,
-        color: 0xFC4C02,
-        fields: [
-            { name: "Distance",              value: `**${distanceMiles} mi**`,                 inline: false },
-            { name: "Duration",              value: duration,                                  inline: true },
-            { name: "Pace",                  value: `${paceMinutes}:${paceSeconds}/mi`,        inline: true },
-            { name: "Elevation",             value: `${elevationFeet} ft`,                     inline: true },
-            { 
-              name: "─────────────────────", 
-              value: `**Weekly Distance**: ${weekly_miles} mi | **Run** #${weekly_run_count}`, 
-              inline: false 
-            },
-        ],
-        footer: { text: "Strava Activity" },
-        timestamp: true,
-    };
+  return {
+    title: `${activity.name}`,
+    description: `<@${discordId}> just logged a ${activity.sport_type.toLowerCase()}!`,
+    color: 0xFC4C02,
+    fields: [
+      { name: "Distance", value: `**${distanceMiles} mi**`, inline: false },
+      { name: "Duration", value: duration, inline: true },
+      { name: "Pace", value: `${paceMinutes}:${paceSeconds}/mi`, inline: true },
+      { name: "Elevation", value: `${elevationFeet} ft`, inline: true },
+      {
+        name: "────────────────────────",
+        value: `**Weekly Distance**: ${weekly_miles} mi | **Run** #${weekly_run_count}`,
+        inline: false
+      },
+    ],
+    footer: { text: "Strava Activity" },
+    timestamp: true,
+  };
+}
+
+async function startStatusRotation() {
+  const statuses = await buildStatuses();
+  let index = 0;
+
+  const rotate = () => {
+    if (!statuses.length) return;
+
+    client.user?.setPresence(statuses[index % statuses.length]);
+    index++;
+  };
+
+  rotate();
+
+  // Clear existing interval if it exists
+  if (statusInterval) clearInterval(statusInterval);
+
+  statusInterval = setInterval(rotate, 4 * 60 * 60 * 1000);
+}
+
+async function buildStatuses(): Promise<PresenceData[]> {
+  const [{ count: userCount }] = await sql`
+    SELECT COUNT(*) as count FROM strava_accounts
+  `;
+
+  const [{ count: todayCount }] = await sql`
+    SELECT COUNT(*) as count 
+    FROM strava_activities
+    WHERE start_date >= CURRENT_DATE
+      AND sport_type = 'Run'
+  `;
+
+  const statuses: PresenceData[] = [
+    {
+      activities: [{ name: `${userCount} athletes connected`, type: ActivityType.Watching }],
+      status: "online",
+    },
+    {
+      activities: [
+        {
+          name: todayCount > 0 ? `${todayCount} runs today` : `😴 No runs yet today...`,
+          type: ActivityType.Watching,
+        },
+      ],
+      status: "online",
+    }
+  ];
+  
+  return statuses;
 }
 
 export default client;
