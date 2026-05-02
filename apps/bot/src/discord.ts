@@ -1,4 +1,5 @@
 import { ActivityType, Client, Collection, Events, GatewayIntentBits, PresenceData, TextChannel } from "discord.js";
+import type { EmbedPayload } from "./types";
 import { loadCommands } from "./commands/handler";
 import { sql } from "bun";
 const token = process.env.DISCORD_TOKEN;
@@ -67,14 +68,7 @@ export async function sendMessage(content: string): Promise<void> {
   await (channel as TextChannel).send(content);
 }
 
-export async function sendEmbed(embed: {
-  title?: string;
-  description?: string;
-  color?: number;
-  fields?: { name: string; value: string; inline?: boolean }[];
-  footer?: { text: string };
-  timestamp?: boolean;
-}): Promise<void> {
+export async function sendEmbed(embed: EmbedPayload): Promise<void> {
   await waitForReady();
 
   const channel = client.channels.cache.get(channelId);
@@ -95,41 +89,6 @@ export async function sendEmbed(embed: {
   if (embed.timestamp) builder.setTimestamp();
 
   await (channel as TextChannel).send({ embeds: [builder] });
-}
-
-export function formatActivity(activity: any, discordId: string): Parameters<typeof sendEmbed>[0] {
-  const distanceMiles = (activity.distance_meters / 1609.344).toFixed(2);
-  const pacePerMile = activity.moving_time_seconds / (activity.distance_meters / 1609.344);
-  const paceMinutes = Math.floor(pacePerMile / 60);
-  const paceSeconds = Math.round(pacePerMile % 60).toString().padStart(2, "0");
-  const durationHours = Math.floor(activity.moving_time_seconds / 3600);
-  const durationMinutes = Math.floor((activity.moving_time_seconds % 3600) / 60);
-  const durationSeconds = (activity.moving_time_seconds % 60).toString().padStart(2, "0");
-  const elevationFeet = Math.round(activity.elevation_gain * 3.28084);
-  const weekly_miles = activity.weekly_miles;
-  const weekly_run_count = activity.weekly_run_count;
-  const duration = durationHours > 0
-    ? `${durationHours}h ${durationMinutes}m ${durationSeconds}s`
-    : `${durationMinutes}m ${durationSeconds}s`;
-
-  return {
-    title: `${activity.name}`,
-    description: `<@${discordId}> just logged a ${activity.sport_type.toLowerCase()}!`,
-    color: 0xFC4C02,
-    fields: [
-      { name: "Distance", value: `**${distanceMiles} mi**`, inline: false },
-      { name: "Duration", value: duration, inline: true },
-      { name: "Pace", value: `${paceMinutes}:${paceSeconds}/mi`, inline: true },
-      { name: "Elevation", value: `${elevationFeet} ft`, inline: true },
-      {
-        name: "────────────────────────",
-        value: `**Weekly Distance**: ${weekly_miles} mi | **Run** #${weekly_run_count}`,
-        inline: false
-      },
-    ],
-    footer: { text: "Strava Activity" },
-    timestamp: true,
-  };
 }
 
 async function startStatusRotation() {

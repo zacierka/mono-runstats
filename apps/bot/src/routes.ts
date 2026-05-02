@@ -1,5 +1,6 @@
 import { Hono, } from "hono";
-import { sendMessage, sendEmbed, botHealth, formatActivity } from "./discord";
+import { sendMessage, sendEmbed, botHealth } from "./discord";
+import { formatActivity } from "./strava/format";
 import { sql } from "bun";
 import { backendService } from "@packages/shared/src/hono/middleware";
 const routes = new Hono();
