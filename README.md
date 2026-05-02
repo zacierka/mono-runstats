@@ -11,3 +11,29 @@ This app will support portainer stack and docker compose. Eventually helm ... ma
 docker-compose up -d
 
 docker-compose down --rmi local
+
+
+### Feature Set
+- [x] User Registration
+- [x] Publish Activities to Channel
+- [ ] Summaries
+    - [ ] Weekly
+    - [ ] Monthly
+    - [ ] Race
+- [ ] Athlete Comparisons
+- [ ] Admin Session Webpage
+    - [ ] Per Guild Configuration
+        - [ ] Summaries cron timing
+        - [ ] Activity filter
+        - [ ] Global detail filter
+        - [ ] Channels
+        - [ ] Unit(metric/mmperial) filter
+- [ ] Commands
+    - [ ] RunSignUp Queries
+    - [ ] Vanish/Anon - no link, hide location, units based on guild location
+    - [ ] Gear - users gear
+    - [ ] Leaderboards - per stat
+    - [ ] Races - view users races
+- [ ] Non discord user registration
+    - [ ] Comparisons
+
