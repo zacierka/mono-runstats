@@ -32,11 +32,8 @@ await loadCommands(client);
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  console.log(`Command Called: ${interaction.commandName} by ${interaction.user.tag}`);
-
-
   const command = client.commands.get(interaction.commandName);
-  console.log(`Command resolved to ${command.data.name}`);
+  console.log(`Command: /${command.data.name} by ${interaction.user.tag}`);
 
   if (!command) return;
 
@@ -86,7 +83,7 @@ export async function sendEmbed(embed: EmbedPayload): Promise<void> {
   if (embed.color !== undefined) builder.setColor(embed.color);
   if (embed.fields) builder.addFields(embed.fields);
   if (embed.footer) builder.setFooter(embed.footer);
-  if (embed.timestamp) builder.setTimestamp();
+  if (embed.timestamp) builder.setTimestamp(new Date(embed.timestamp));
 
   await (channel as TextChannel).send({ embeds: [builder] });
 }

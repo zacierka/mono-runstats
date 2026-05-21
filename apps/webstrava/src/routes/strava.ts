@@ -63,7 +63,8 @@ stravaRoutes.get("/auth/strava/callback", async (c) => {
                 athlete_lastname,
                 athlete_profile_pic,
                 athlete_city,
-                athlete_country
+                athlete_country,
+                raw_athlete
             )
             VALUES (
                 ${oauthState.user_id},
@@ -76,13 +77,15 @@ stravaRoutes.get("/auth/strava/callback", async (c) => {
                 ${data.athlete.lastname ?? null},
                 ${data.athlete.profile ?? null},
                 ${data.athlete.city ?? null},
-                ${data.athlete.country ?? null}
+                ${data.athlete.country ?? null},
+                ${JSON.stringify(data.athlete)}
             )
             ON CONFLICT (strava_athlete_id) DO UPDATE SET
                 user_id          = EXCLUDED.user_id,
                 access_token     = EXCLUDED.access_token,
                 refresh_token    = EXCLUDED.refresh_token,
                 token_expires_at = EXCLUDED.token_expires_at,
+                raw_athlete      = EXCLUDED.raw_athlete,
                 updated_at       = now()
         `;
     });
@@ -117,16 +120,21 @@ stravaRoutes.post("/webhook", async (c) => {
         return c.text("ok");
     }
 
+    // handle updates
+
+    // handle deletes
+
     const athleteId = body.owner_id;
     const activityId = body.object_id;
 
     const [account] = await sql`
-        SELECT id, access_token, token_expires_at
+        SELECT id, access_token, token_expires_at, athlete_lastname
         FROM strava_accounts
         WHERE strava_athlete_id = ${athleteId}
     `;
 
     if (!account) {
+        // non discord users eventually
         console.warn("Received webhook for unknown athlete:", athleteId);
         return c.text("ok");
     }
@@ -147,7 +155,7 @@ stravaRoutes.post("/webhook", async (c) => {
 
     const activity = await activityRes.json() as any;
 
-    await sql`
+    const [inserted] = await sql`
         INSERT INTO strava_activities (
             strava_account_id,
             strava_activity_id,
@@ -171,9 +179,15 @@ stravaRoutes.post("/webhook", async (c) => {
             ${activity.start_date}
         )
         ON CONFLICT (strava_activity_id) DO NOTHING
+        RETURNING strava_activity_id
     `;
 
-    console.log("Saved activity:", activity.id, activity.name, "for athlete:", athleteId);
+    if (!inserted) {
+        console.log("Duplicate webhook for activity:", activity.id, " skipping");
+        return c.text("ok");
+    }
+
+    console.log("Saved activity:", activity.id, activity.name, "for athlete:", account.athlete_lastname , athleteId);
 
     if (activity.sport_type === "Run") {
         await fetch(`http://${STRAVA_BOT_ENDPOINT}/strava/activity`, {

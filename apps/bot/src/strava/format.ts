@@ -31,6 +31,6 @@ export function formatActivity(activity: any, discordId: string): EmbedPayload {
       },
     ],
     footer: { text: "Strava Activity" },
-    timestamp: true,
+    timestamp: activity.start_date,
   };
 }
