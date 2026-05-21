@@ -1,6 +1,8 @@
 # RunStats unreleased
 Runstats v2 mono repo
 
+Getting used to using CLAUDE CODE.
+
 A TypeScript + Bun monorepo for integrating Strava activity events with Discord, allowing athletes to link their Strava accounts and automatically post rich Discord embeds when workouts are completed.
 
 This repo is all the applications needed to start runstats. RunStats is a discord interface for strava. Users can see their activities, leaderboards, feats, and more. This will be built out to target containers and follow the [12 factor app](https://12factor.net/) methodology. 
@@ -31,7 +33,7 @@ docker-compose down --rmi local
 - [ ] Commands
     - [ ] RunSignUp Queries
     - [ ] Vanish/Anon - no link, hide location, units based on guild location
-    - [ ] Gear - users gear
+    - [x] Gear - users gear
     - [ ] Leaderboards - per stat
     - [ ] Races - view users races
 - [ ] Non discord user registration

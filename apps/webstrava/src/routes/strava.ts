@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { sql } from "bun";
 import { refreshStravaToken } from "../strava/tokenHandler";
+import { backfillHistoricalActivities } from "../strava/backfill";
 export const stravaRoutes = new Hono();
 
 const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID!;
@@ -50,49 +51,51 @@ stravaRoutes.get("/auth/strava/callback", async (c) => {
         return c.text("Failed to authenticate with Strava", 500);
     }
 
-    await sql.begin(async (tx) => {
-        await tx`
-            INSERT INTO strava_accounts (
-                user_id,
-                strava_athlete_id,
-                access_token,
-                refresh_token,
-                token_expires_at,
-                scope,
-                athlete_firstname,
-                athlete_lastname,
-                athlete_profile_pic,
-                athlete_city,
-                athlete_country,
-                raw_athlete
-            )
-            VALUES (
-                ${oauthState.user_id},
-                ${data.athlete.id},
-                ${data.access_token},
-                ${data.refresh_token},
-                to_timestamp(${data.expires_at}),
-                ${data.scope ?? "read,activity:read_all"},
-                ${data.athlete.firstname ?? null},
-                ${data.athlete.lastname ?? null},
-                ${data.athlete.profile ?? null},
-                ${data.athlete.city ?? null},
-                ${data.athlete.country ?? null},
-                ${JSON.stringify(data.athlete)}
-            )
-            ON CONFLICT (strava_athlete_id) DO UPDATE SET
-                user_id          = EXCLUDED.user_id,
-                access_token     = EXCLUDED.access_token,
-                refresh_token    = EXCLUDED.refresh_token,
-                token_expires_at = EXCLUDED.token_expires_at,
-                raw_athlete      = EXCLUDED.raw_athlete,
-                updated_at       = now()
-        `;
-    });
+    const [{ id: accountId }] = await sql`
+        INSERT INTO strava_accounts (
+            user_id,
+            strava_athlete_id,
+            access_token,
+            refresh_token,
+            token_expires_at,
+            scope,
+            athlete_firstname,
+            athlete_lastname,
+            athlete_profile_pic,
+            athlete_city,
+            athlete_country,
+            raw_athlete
+        )
+        VALUES (
+            ${oauthState.user_id},
+            ${data.athlete.id},
+            ${data.access_token},
+            ${data.refresh_token},
+            to_timestamp(${data.expires_at}),
+            ${data.scope ?? "read,activity:read_all"},
+            ${data.athlete.firstname ?? null},
+            ${data.athlete.lastname ?? null},
+            ${data.athlete.profile ?? null},
+            ${data.athlete.city ?? null},
+            ${data.athlete.country ?? null},
+            ${JSON.stringify(data.athlete)}
+        )
+        ON CONFLICT (strava_athlete_id) DO UPDATE SET
+            user_id          = EXCLUDED.user_id,
+            access_token     = EXCLUDED.access_token,
+            refresh_token    = EXCLUDED.refresh_token,
+            token_expires_at = EXCLUDED.token_expires_at,
+            raw_athlete      = EXCLUDED.raw_athlete,
+            updated_at       = now()
+        RETURNING id
+    `;
 
     console.log("Linked user:", oauthState.user_id, data.athlete.id);
 
-    // Possibly notify user on Discord that linking was successful
+    backfillHistoricalActivities(accountId, data.access_token).catch((err) =>
+        console.error("Backfill failed for account:", accountId, err)
+    );
+
     return c.text("Strava account linked! You can return to Discord.");
 });
 
