@@ -31,6 +31,7 @@ CREATE TABLE strava_accounts (
   athlete_profile_pic  TEXT,
   athlete_city         TEXT,
   athlete_country      TEXT,
+  raw_athlete          JSONB,
   created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
 );
