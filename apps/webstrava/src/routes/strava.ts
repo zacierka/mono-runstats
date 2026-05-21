@@ -115,7 +115,7 @@ stravaRoutes.get("/webhook", (c) => {
 stravaRoutes.post("/webhook", async (c) => {
     const body = await c.req.json();
 
-    console.log("Strava Event:", body);
+    console.log("Received Event: ", JSON.stringify(body));
     if (body.object_type !== "activity" || body.aspect_type !== "create") {
         return c.text("ok");
     }
