@@ -9,8 +9,8 @@ async function deploy() {
   const commandsPath = path.join(import.meta.dir, "commands");
 
   for await (const file of glob.scan(commandsPath)) {
-    console.log(`Processing command file: ${file}`);
     if (file.endsWith("index.ts") || file.endsWith("handler.ts") || file.endsWith("command.ts")) continue;
+    console.log(`Processing command file: ${file}`);
 
     const fullPath = path.join(commandsPath, file);
     const command = (await import(fullPath)).default;
@@ -27,6 +27,8 @@ async function deploy() {
     console.warn("⚠️ No valid commands found to deploy.");
     return;
   }
+
+  console.log("Commands to deploy:", JSON.stringify(commands, null, 2));
 
   const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN! as string);
 

@@ -61,7 +61,8 @@ CREATE TABLE strava_activities (
   elevation_gain      FLOAT,
   raw_data            JSONB,                       -- full Strava payload, queryable
   start_date          TIMESTAMPTZ,
-  synced_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+  synced_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  discord_message_id  TEXT
 );
 
 -- Indexes

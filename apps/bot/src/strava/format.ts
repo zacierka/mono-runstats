@@ -9,8 +9,8 @@ export function formatActivity(activity: any, discordId: string): EmbedPayload {
   const durationMinutes = Math.floor((activity.moving_time_seconds % 3600) / 60);
   const durationSeconds = (activity.moving_time_seconds % 60).toString().padStart(2, "0");
   const elevationFeet = Math.round(activity.elevation_gain * 3.28084);
-  const weekly_miles = activity.weekly_miles;
-  const weekly_run_count = activity.weekly_run_count;
+  const weekly_miles = activity.weekly_miles ?? 0;
+  const weekly_run_count = activity.weekly_run_count ?? 0;
   const duration = durationHours > 0
     ? `${durationHours}h ${durationMinutes}m ${durationSeconds}s`
     : `${durationMinutes}m ${durationSeconds}s`;
@@ -24,11 +24,11 @@ export function formatActivity(activity: any, discordId: string): EmbedPayload {
       { name: "Duration", value: duration, inline: true },
       { name: "Pace", value: `${paceMinutes}:${paceSeconds}/mi`, inline: true },
       { name: "Elevation", value: `${elevationFeet} ft`, inline: true },
-      {
+      ...(weekly_miles > 0 || weekly_run_count > 0 ? [{
         name: "────────────────────────",
-        value: `**Weekly Distance**: ${weekly_miles} mi | **Run** #${weekly_run_count}`,
-        inline: false
-      },
+        value: `**Weekly Distance**: ${weekly_miles.toFixed(2)} mi | **Run** #${weekly_run_count}`,
+        inline: false as const
+      }] : []),
     ],
     footer: { text: "Strava Activity" },
     timestamp: activity.start_date,

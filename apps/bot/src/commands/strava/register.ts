@@ -21,7 +21,7 @@ const command: Command = {
 
     const CLIENTID = process.env.STRAVA_CLIENT_ID as string;
     const REDIRECT_URI = process.env.STRAVA_REDIRECT_URI as string;
-    const scope = "read,activity:read_all";
+    const scope = "read,activity:read_all,profile:read_all";
 
     const user: DiscordUser = {
       uid: interaction.user.id,
