@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { sql } from "bun";
-import { refreshStravaToken } from "../strava/tokenHandler";
+import { refreshStravaToken } from "@packages/shared/src/strava/tokenHandler";
+import { STRAVA_API_BASE } from "@packages/shared/src/strava/api";
 import { backfillHistoricalActivities } from "../strava/backfill";
 export const stravaRoutes = new Hono();
 
@@ -119,13 +120,17 @@ stravaRoutes.post("/webhook", async (c) => {
     const body = await c.req.json();
 
     console.log("Received Event: ", JSON.stringify(body));
-    if (body.object_type !== "activity" || body.aspect_type !== "create") {
+
+    if (body.object_type === "athlete" && body.aspect_type === "delete") {
+        await sql`
+            DELETE FROM strava_accounts
+            WHERE strava_athlete_id = ${body.owner_id}
+        `;
+        console.log("Deauthorized athlete, removed account:", body.owner_id);
         return c.text("ok");
     }
 
-    // handle updates
-
-    // handle deletes
+    if (body.object_type !== "activity") return c.text("ok");
 
     const athleteId = body.owner_id;
     const activityId = body.object_id;
@@ -137,7 +142,6 @@ stravaRoutes.post("/webhook", async (c) => {
     `;
 
     if (!account) {
-        // non discord users eventually
         console.warn("Received webhook for unknown athlete:", athleteId);
         return c.text("ok");
     }
@@ -147,7 +151,7 @@ stravaRoutes.post("/webhook", async (c) => {
         accessToken = await refreshStravaToken(account.id);
     }
 
-    const activityRes = await fetch(`https://www.strava.com/api/v3/activities/${activityId}`, {
+    const activityRes = await fetch(`${STRAVA_API_BASE}/activities/${activityId}`, {
         headers: { Authorization: `Bearer ${accessToken}` }
     });
 
@@ -158,49 +162,78 @@ stravaRoutes.post("/webhook", async (c) => {
 
     const activity = await activityRes.json() as any;
 
-    const [inserted] = await sql`
-        INSERT INTO strava_activities (
-            strava_account_id,
-            strava_activity_id,
-            name,
-            sport_type,
-            distance_meters,
-            moving_time_seconds,
-            elevation_gain,
-            raw_data,
-            start_date
-        )
-        VALUES (
-            ${account.id},
-            ${activity.id},
-            ${activity.name},
-            ${activity.sport_type},
-            ${activity.distance ?? null},
-            ${activity.moving_time ?? null},
-            ${activity.total_elevation_gain ?? null},
-            ${JSON.stringify(activity)},
-            ${activity.start_date}
-        )
-        ON CONFLICT (strava_activity_id) DO NOTHING
-        RETURNING strava_activity_id
-    `;
+    if (body.aspect_type === "create") {
+        const [inserted] = await sql`
+            INSERT INTO strava_activities (
+                strava_account_id,
+                strava_activity_id,
+                name,
+                sport_type,
+                distance_meters,
+                moving_time_seconds,
+                elevation_gain,
+                raw_data,
+                start_date
+            )
+            VALUES (
+                ${account.id},
+                ${activity.id},
+                ${activity.name},
+                ${activity.sport_type},
+                ${activity.distance ?? null},
+                ${activity.moving_time ?? null},
+                ${activity.total_elevation_gain ?? null},
+                ${JSON.stringify(activity)},
+                ${activity.start_date}
+            )
+            ON CONFLICT (strava_activity_id) DO NOTHING
+            RETURNING strava_activity_id
+        `;
 
-    if (!inserted) {
-        console.log("Duplicate webhook for activity:", activity.id, " skipping");
-        return c.text("ok");
+        if (!inserted) {
+            console.log("Duplicate webhook for activity:", activity.id, "skipping");
+            return c.text("ok");
+        }
+
+        console.log("Saved activity:", activity.id, activity.name, "for athlete:", account.athlete_lastname, athleteId);
+
+        if (activity.sport_type === "Run") {
+            const botRes = await fetch(`http://${STRAVA_BOT_ENDPOINT}/strava/activity`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "x-internal-secret": process.env.INTERNAL_SECRET! },
+                body: JSON.stringify({ activity_id: activity.id })
+            });
+            if (!botRes.ok) {
+                console.error("Failed to notify bot of new activity:", activity.id, await botRes.text());
+            }
+        }
     }
 
-    console.log("Saved activity:", activity.id, activity.name, "for athlete:", account.athlete_lastname , athleteId);
+    if (body.aspect_type === "update") {
+        await sql`
+            UPDATE strava_activities SET
+                name                = ${activity.name},
+                sport_type          = ${activity.sport_type},
+                distance_meters     = ${activity.distance ?? null},
+                moving_time_seconds = ${activity.moving_time ?? null},
+                elevation_gain      = ${activity.total_elevation_gain ?? null},
+                raw_data            = ${JSON.stringify(activity)},
+                synced_at           = now()
+            WHERE strava_activity_id = ${activityId}
+        `;
 
-    if (activity.sport_type === "Run") {
-        await fetch(`http://${STRAVA_BOT_ENDPOINT}/strava/activity`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "x-internal-secret": process.env.INTERNAL_SECRET!
-            },
-            body: JSON.stringify({ activity_id: activity.id })
-        });
+        console.log("Updated activity:", activity.id, activity.name, "for athlete:", account.athlete_lastname, athleteId);
+
+        if (activity.sport_type === "Run") {
+            const botRes = await fetch(`http://${STRAVA_BOT_ENDPOINT}/strava/activity/update`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "x-internal-secret": process.env.INTERNAL_SECRET! },
+                body: JSON.stringify({ activity_id: activity.id })
+            });
+            if (!botRes.ok) {
+                console.error("Failed to notify bot of updated activity:", activity.id, await botRes.text());
+            }
+        }
     }
 
     return c.text("ok");

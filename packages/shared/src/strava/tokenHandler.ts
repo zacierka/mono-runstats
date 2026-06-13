@@ -1,4 +1,4 @@
-import { sql } from "bun"
+import { sql } from "bun";
 
 export async function refreshStravaToken(stravaAccountId: string): Promise<string> {
     const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID;
@@ -21,6 +21,10 @@ export async function refreshStravaToken(stravaAccountId: string): Promise<strin
 
     const data = await res.json() as any;
 
+    if (!res.ok || !data.access_token) {
+        throw new Error(`Strava token refresh failed for account ${stravaAccountId}: ${JSON.stringify(data)}`);
+    }
+
     await sql`
         UPDATE strava_accounts
         SET access_token     = ${data.access_token},
@@ -31,4 +35,4 @@ export async function refreshStravaToken(stravaAccountId: string): Promise<strin
     `;
 
     return data.access_token;
-};
+}

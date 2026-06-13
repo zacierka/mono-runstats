@@ -33,9 +33,9 @@ client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   const command = client.commands.get(interaction.commandName);
-  console.log(`Command: /${command.data.name} by ${interaction.user.tag}`);
-
+  
   if (!command) return;
+  console.log(`Command: /${command.data.name} by ${interaction.user.tag}`);
 
   await command.execute(interaction);
 
@@ -65,7 +65,19 @@ export async function sendMessage(content: string): Promise<void> {
   await (channel as TextChannel).send(content);
 }
 
-export async function sendEmbed(embed: EmbedPayload): Promise<void> {
+function buildEmbed(embed: EmbedPayload) {
+  const { EmbedBuilder } = require("discord.js");
+  const builder = new EmbedBuilder();
+  if (embed.title) builder.setTitle(embed.title);
+  if (embed.description) builder.setDescription(embed.description);
+  if (embed.color !== undefined) builder.setColor(embed.color);
+  if (embed.fields) builder.addFields(embed.fields);
+  if (embed.footer) builder.setFooter(embed.footer);
+  if (embed.timestamp) builder.setTimestamp(new Date(embed.timestamp));
+  return builder;
+}
+
+export async function sendEmbed(embed: EmbedPayload): Promise<string> {
   await waitForReady();
 
   const channel = client.channels.cache.get(channelId);
@@ -75,17 +87,22 @@ export async function sendEmbed(embed: EmbedPayload): Promise<void> {
     );
   }
 
-  const { EmbedBuilder } = await import("discord.js");
-  const builder = new EmbedBuilder();
+  const message = await (channel as TextChannel).send({ embeds: [buildEmbed(embed)] });
+  return message.id;
+}
 
-  if (embed.title) builder.setTitle(embed.title);
-  if (embed.description) builder.setDescription(embed.description);
-  if (embed.color !== undefined) builder.setColor(embed.color);
-  if (embed.fields) builder.addFields(embed.fields);
-  if (embed.footer) builder.setFooter(embed.footer);
-  if (embed.timestamp) builder.setTimestamp(new Date(embed.timestamp));
+export async function editEmbed(messageId: string, embed: EmbedPayload): Promise<void> {
+  await waitForReady();
 
-  await (channel as TextChannel).send({ embeds: [builder] });
+  const channel = client.channels.cache.get(channelId);
+  if (!channel || !channel.isSendable()) {
+    throw new Error(
+      `Channel ${channelId} not found or is not a sendable text channel.`
+    );
+  }
+
+  const message = await (channel as TextChannel).messages.fetch(messageId);
+  await message.edit({ embeds: [buildEmbed(embed)] });
 }
 
 async function startStatusRotation() {

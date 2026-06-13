@@ -2,8 +2,9 @@ import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { waitForReady } from "./discord";
 import routes from "./routes";
+import { name, version } from "../package.json";
 
-console.log(`ENV VARS:\n${JSON.stringify(process.env, null, 2)}\n---`);
+console.log(`${name} v${version}`);
 
 const app = new Hono();
 const port = Number(process.env.PORT) || 4000;

@@ -8,7 +8,7 @@ TAG="${TAG:-latest}"
 
 # ===== HELP =====
 if [ -z "$1" ]; then
-  echo "Usage: ./deploy.sh [all|bot|pg|strava]"
+  echo "Usage: ./deploy.sh [all|bot|pg|web]"
   exit 1
 fi
 
