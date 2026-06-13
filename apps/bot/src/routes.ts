@@ -3,6 +3,7 @@ import { sendMessage, sendEmbed, editEmbed, botHealth } from "./discord";
 import { formatActivity } from "./strava/format";
 import { sql } from "bun";
 import { backendService } from "@packages/shared/src/hono/middleware";
+import { METERS_PER_MILE } from "@packages/shared/src/strava/constants";
 const routes = new Hono();
 
 // ─── Health check
@@ -32,7 +33,7 @@ async function fetchActivity(activity_id: number | bigint) {
         SUM(sa2.distance_meters) FILTER (
           WHERE sa2.sport_type = 'Run'
             AND sa2.start_date >= date_trunc('week', now())
-        ) / 1609.344
+        ) / ${METERS_PER_MILE}
       )::numeric, 2), 0) AS weekly_miles
 
     FROM strava_activities sa

@@ -1,4 +1,5 @@
 import { sql } from "bun";
+import { STRAVA_API_BASE } from "@packages/shared/src/strava/api";
 
 export async function backfillHistoricalActivities(accountId: string, accessToken: string): Promise<void> {
     let page = 1;
@@ -9,7 +10,7 @@ export async function backfillHistoricalActivities(accountId: string, accessToke
 
     while (hasMore) {
         const res = await fetch(
-            `https://www.strava.com/api/v3/athlete/activities?per_page=200&page=${page}`,
+            `${STRAVA_API_BASE}/athlete/activities?per_page=200&page=${page}`,
             { headers: { Authorization: `Bearer ${accessToken}` } }
         );
 

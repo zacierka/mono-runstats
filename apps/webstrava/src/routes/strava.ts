@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { sql } from "bun";
 import { refreshStravaToken } from "@packages/shared/src/strava/tokenHandler";
+import { STRAVA_API_BASE } from "@packages/shared/src/strava/api";
 import { backfillHistoricalActivities } from "../strava/backfill";
 export const stravaRoutes = new Hono();
 
@@ -120,6 +121,15 @@ stravaRoutes.post("/webhook", async (c) => {
 
     console.log("Received Event: ", JSON.stringify(body));
 
+    if (body.object_type === "athlete" && body.aspect_type === "delete") {
+        await sql`
+            DELETE FROM strava_accounts
+            WHERE strava_athlete_id = ${body.owner_id}
+        `;
+        console.log("Deauthorized athlete, removed account:", body.owner_id);
+        return c.text("ok");
+    }
+
     if (body.object_type !== "activity") return c.text("ok");
 
     const athleteId = body.owner_id;
@@ -141,7 +151,7 @@ stravaRoutes.post("/webhook", async (c) => {
         accessToken = await refreshStravaToken(account.id);
     }
 
-    const activityRes = await fetch(`https://www.strava.com/api/v3/activities/${activityId}`, {
+    const activityRes = await fetch(`${STRAVA_API_BASE}/activities/${activityId}`, {
         headers: { Authorization: `Bearer ${accessToken}` }
     });
 

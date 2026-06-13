@@ -1,14 +1,15 @@
 import type { EmbedPayload } from "../types";
+import { METERS_PER_MILE, FEET_PER_METER } from "@packages/shared/src/strava/constants";
 
 export function formatActivity(activity: any, discordId: string): EmbedPayload {
-  const distanceMiles = (activity.distance_meters / 1609.344).toFixed(2);
-  const pacePerMile = activity.moving_time_seconds / (activity.distance_meters / 1609.344);
+  const distanceMiles = (activity.distance_meters / METERS_PER_MILE).toFixed(2);
+  const pacePerMile = activity.moving_time_seconds / (activity.distance_meters / METERS_PER_MILE);
   const paceMinutes = Math.floor(pacePerMile / 60);
   const paceSeconds = Math.round(pacePerMile % 60).toString().padStart(2, "0");
   const durationHours = Math.floor(activity.moving_time_seconds / 3600);
   const durationMinutes = Math.floor((activity.moving_time_seconds % 3600) / 60);
   const durationSeconds = (activity.moving_time_seconds % 60).toString().padStart(2, "0");
-  const elevationFeet = Math.round(activity.elevation_gain * 3.28084);
+  const elevationFeet = Math.round(activity.elevation_gain * FEET_PER_METER);
   const weekly_miles = activity.weekly_miles ?? 0;
   const weekly_run_count = activity.weekly_run_count ?? 0;
   const duration = durationHours > 0

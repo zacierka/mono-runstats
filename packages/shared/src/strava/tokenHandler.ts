@@ -21,6 +21,10 @@ export async function refreshStravaToken(stravaAccountId: string): Promise<strin
 
     const data = await res.json() as any;
 
+    if (!res.ok || !data.access_token) {
+        throw new Error(`Strava token refresh failed for account ${stravaAccountId}: ${JSON.stringify(data)}`);
+    }
+
     await sql`
         UPDATE strava_accounts
         SET access_token     = ${data.access_token},

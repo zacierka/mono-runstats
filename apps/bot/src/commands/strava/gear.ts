@@ -2,6 +2,8 @@ import { SlashCommandBuilder } from "discord.js";
 import type { Command } from "../command";
 import { sql } from "bun";
 import { refreshStravaToken } from "@packages/shared/src/strava/tokenHandler";
+import { STRAVA_API_BASE } from "@packages/shared/src/strava/api";
+import { METERS_PER_MILE } from "@packages/shared/src/strava/constants";
 
 const command: Command = {
     data: new SlashCommandBuilder()
@@ -37,16 +39,22 @@ const command: Command = {
             `;
 
             if (!account) {
-                await interaction.editReply(`${targetUser.username} hasn't linked their Strava account.`);
+                await interaction.editReply(`${targetUser.displayName} hasn't linked their Strava account.`);
                 return;
             }
 
             let accessToken = account.access_token;
             if (new Date(account.token_expires_at) <= new Date()) {
-                accessToken = await refreshStravaToken(account.id);
+                try {
+                    accessToken = await refreshStravaToken(account.id);
+                } catch (err) {
+                    console.error("Token refresh failed:", err);
+                    await interaction.editReply("Could not refresh Strava connection. Try re-linking with `/link-strava`.");
+                    return;
+                }
             }
 
-            const res = await fetch("https://www.strava.com/api/v3/athlete", {
+            const res = await fetch(`${STRAVA_API_BASE}/athlete`, {
                 headers: { Authorization: `Bearer ${accessToken}` }
             });
 
@@ -59,16 +67,16 @@ const command: Command = {
             const shoes: any[] = athlete.shoes ?? [];
 
             if (!shoes.length) {
-                await interaction.editReply(`${targetUser.username} has no shoes registered on Strava.`);
+                await interaction.editReply(`${targetUser.displayName} has no shoes registered on Strava.`);
                 return;
             }
 
             const lines = shoes.map((s: any) => {
-                const miles = (s.distance / 1609.344).toFixed(1);
+                const miles = (s.distance / METERS_PER_MILE).toFixed(1);
                 return `${s.primary ? "👟 " : ""}**${s.name}** — ${miles} mi`;
             });
 
-            await interaction.editReply(`**${targetUser.username}'s Shoes**\n${lines.join("\n")}`);
+            await interaction.editReply(`**${targetUser.displayName}'s Shoes**\n${lines.join("\n")}`);
         }
     },
 };
