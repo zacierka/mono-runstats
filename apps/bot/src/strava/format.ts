@@ -27,7 +27,7 @@ export function formatActivity(activity: any, discordId: string): EmbedPayload {
       { name: "Elevation", value: `${elevationFeet} ft`, inline: true },
       ...(weekly_miles > 0 || weekly_run_count > 0 ? [{
         name: "────────────────────────",
-        value: `**Weekly Distance**: ${weekly_miles.toFixed(2)} mi | **Run** #${weekly_run_count}`,
+        value: `**Weekly Distance**: ${weekly_miles} mi | **Run** #${weekly_run_count}`,
         inline: false as const
       }] : []),
     ],
