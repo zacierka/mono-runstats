@@ -1,29 +1,29 @@
 services:
-  bot:
-    build:
-      context: .
-      dockerfile: infra/images/Dockerfile.discord
-    container_name: strava-bot
-    ports:
-      - "4000:4000"
-    env_file:
-      - apps/bot/.env
-    depends_on:
-      - postgres
-    restart: on-failure:3
+  # bot:
+  #   build:
+  #     context: .
+  #     dockerfile: infra/images/Dockerfile.discord
+  #   container_name: strava-bot
+  #   ports:
+  #     - "4000:4000"
+  #   env_file:
+  #     - apps/bot/.env
+  #   depends_on:
+  #     - postgres
+  #   restart: on-failure:3
 
-  webstrava:
-    build:
-      context: .
-      dockerfile: infra/images/Dockerfile.webstrava
-    container_name: webstrava
-    ports:
-      - "3000:3000"
-    env_file:
-      - apps/webstrava/.env
-    depends_on:
-      - postgres
-    restart: no
+  # webstrava:
+  #   build:
+  #     context: .
+  #     dockerfile: infra/images/Dockerfile.webstrava
+  #   container_name: webstrava
+  #   ports:
+  #     - "3000:3000"
+  #   env_file:
+  #     - apps/webstrava/.env
+  #   depends_on:
+  #     - postgres
+  #   restart: no
 
   postgres:
     build:

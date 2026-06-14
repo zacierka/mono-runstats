@@ -8,7 +8,12 @@
     "paths": {
       "@packages/shared": [
         "../../packages/shared/src"
+      ],
+      "@packages/shared/*": [
+        "../../packages/shared/src/*"
       ]
     }
-  }
+  },
+  "include": ["src"],
+  "files": ["src/types.d.ts"]
 }

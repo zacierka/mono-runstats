@@ -23,7 +23,7 @@ const readyPromise = new Promise<void>((resolve) => {
 
 client.once(Events.ClientReady, (c) => {
   console.log(`[Discord] Logged in as ${c.user.tag}`);
-  startStatusRotation();
+  startStatusRotation().catch((err) => console.error("[Discord] Status rotation failed:", err));
   resolveReady();
 });
 
@@ -106,21 +106,28 @@ export async function editEmbed(messageId: string, embed: EmbedPayload): Promise
 }
 
 async function startStatusRotation() {
-  const statuses = await buildStatuses();
+  let statuses: PresenceData[];
+  try {
+    statuses = await buildStatuses();
+  } catch (err) {
+    console.error("[Discord] Could not build statuses (retrying in 30s):", err);
+    setTimeout(() => {
+      startStatusRotation().catch((e) => console.error("[Discord] Status rotation retry failed:", e));
+    }, 30_000);
+    return;
+  }
+
   let index = 0;
 
   const rotate = () => {
     if (!statuses.length) return;
-
     client.user?.setPresence(statuses[index % statuses.length]);
     index++;
   };
 
   rotate();
 
-  // Clear existing interval if it exists
   if (statusInterval) clearInterval(statusInterval);
-
   statusInterval = setInterval(rotate, 4 * 60 * 60 * 1000);
 }
 

@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { waitForReady } from "./discord";
 import routes from "./routes";
+import adminRoutes from "./adminRoutes";
 import { name, version } from "../package.json";
 
 console.log(`${name} v${version}`);
@@ -12,6 +13,7 @@ app.use(logger());
 
 // Mount routes
 app.route("/", routes);
+app.route("/", adminRoutes);
 
 app.all("*", (c) => {
   return c.json({ error: "Not found" }, 404);
